@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Radar de Seguidores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDEAE0; --surface:#FFFFFF; --surface2:#F6F2E7; --ink:#1E232B; --muted:#5B6470;
+  --border:#D8D2C2; --amber:#B96E17; --teal:#276F60; --red:#A83A2E;
+  --font-d:'Roboto Slab',ui-serif,Georgia,serif; --font-b:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-m:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#141820; --surface:#1D222B; --surface2:#232935; --ink:#E9E6DC; --muted:#9AA3AF;
+    --border:#333B47; --amber:#DFA455; --teal:#4EAE97; --red:#DD6D5F;
+  }
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-b);line-height:1.5;}
+header{padding:28px 20px 20px;border-bottom:1px solid var(--border);}
+header h1{font-family:var(--font-d);font-weight:700;font-size:1.7rem;margin:0 0 4px;}
+header p{margin:0;color:var(--muted);font-size:.95rem;max-width:60ch;}
+main{max-width:1080px;margin:0 auto;padding:24px 20px 60px;display:grid;grid-template-columns:300px 1fr;gap:22px;}
+@media (max-width:800px){main{grid-template-columns:1fr;}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;}
+.card + .card{margin-top:16px;}
+aside h2, section h2{font-family:var(--font-d);font-size:1.05rem;margin:0 0 12px;}
+.tabbar{display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--border);overflow-x:auto;}
+.tabbar button{background:none;border:none;padding:8px 4px;font:inherit;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-size:.92rem;}
+.tabbar button.active{color:var(--ink);border-color:var(--amber);font-weight:600;}
+.subtabs{display:flex;gap:8px;margin-bottom:12px;}
+.subtabs button{flex:1;padding:8px;border:1px solid var(--border);background:var(--surface2);border-radius:7px;font:inherit;cursor:pointer;color:var(--muted);font-size:.85rem;}
+.subtabs button.active{border-color:var(--ink);color:var(--ink);font-weight:600;}
+.pane{display:none;}
+.pane.active{display:block;}
+label{display:block;font-size:.82rem;color:var(--muted);margin:10px 0 5px;}
+input[type=file]{width:100%;font-size:.82rem;color:var(--muted);}
+textarea{width:100%;min-height:90px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);color:var(--ink);font-family:var(--font-m);font-size:.82rem;padding:8px;resize:vertical;}
+button.primary{width:100%;margin-top:14px;padding:10px;border:none;border-radius:7px;background:var(--ink);color:var(--bg);font:inherit;font-weight:600;cursor:pointer;font-size:.9rem;}
+button.primary:hover{opacity:.9;}
+button.ghost{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:7px 10px;font:inherit;cursor:pointer;font-size:.8rem;}
+.msg{font-size:.82rem;margin-top:8px;color:var(--teal);}
+.msg.err{color:var(--red);}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:6px;}
+.stat{border:1px solid var(--border);border-radius:9px;padding:14px;background:var(--surface2);}
+.stat .n{font-family:var(--font-m);font-size:1.7rem;font-weight:600;}
+.stat .l{color:var(--muted);font-size:.8rem;margin-top:2px;}
+.stat.amber .n{color:var(--amber);}
+.stat.teal .n{color:var(--teal);}
+.meta{color:var(--muted);font-size:.8rem;margin:10px 0 0;}
+ul.userlist{list-style:none;margin:0;padding:0;max-height:340px;overflow-y:auto;border-top:1px solid var(--border);}
+ul.userlist li{padding:9px 2px;border-bottom:1px solid var(--border);font-family:var(--font-m);font-size:.88rem;display:flex;justify-content:space-between;gap:8px;}
+ul.userlist li span.t{color:var(--muted);font-size:.75rem;font-family:var(--font-b);}
+.empty{color:var(--muted);font-size:.88rem;padding:20px 4px;text-align:center;}
+.rowbtns{display:flex;gap:8px;margin:12px 0 4px;flex-wrap:wrap;}
+.history-item{border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface2);}
+.history-item .d{font-size:.85rem;}
+.history-item .c{font-family:var(--font-m);font-size:.78rem;color:var(--muted);}
+footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px;border-top:1px solid var(--border);}
+a{color:inherit;}
+</style>
+</head>
+<body>
+<header>
+  <h1>📡 Radar de Seguidores</h1>
+  <p>Compare listas de seguidores ao longo do tempo e descubra quem deixou de te seguir. Tudo roda no seu navegador — nenhum dado sai do seu aparelho.</p>
+</header>
+<main>
+  <aside>
+    <div class="card">
+      <h2>Adicionar snapshot</h2>
+      <div class="subtabs">
+        <button id="tabInsta" class="active">Instagram (.json)</button>
+        <button id="tabManual">Lista manual</button>
+      </div>
+
+      <div id="paneInsta" class="pane active">
+        <label>Arquivo de seguidores (followers_1.json)</label>
+        <input type="file" id="fileFollowers" accept=".json">
+        <label>Arquivo de seguindo (following.json)</label>
+        <input type="file" id="fileFollowing" accept=".json">
+        <p class="meta">No Instagram: Configurações → Central de Contas → "Suas informações e permissões" → "Baixar suas informações" (formato JSON).</p>
+      </div>
+
+      <div id="paneManual" class="pane">
+        <label>Seguidores (um por linha)</label>
+        <textarea id="taFollowers" placeholder="usuario1&#10;usuario2"></textarea>
+        <label>Seguindo (um por linha)</label>
+        <textarea id="taFollowing" placeholder="usuario1&#10;usuario2"></textarea>
+      </div>
+
+      <button class="primary" id="btnAnalyze">Analisar</button>
+      <div id="importMsg" class="msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Backup</h2>
+      <p class="meta">O histórico fica salvo neste navegador. Exporte um backup para não perder os dados ou para continuar em outro aparelho.</p>
+      <div class="rowbtns">
+        <button class="ghost" id="btnExportBackup">Exportar backup</button>
+        <button class="ghost" id="btnImportBackup">Importar backup</button>
+        <button class="ghost" id="btnClear">Apagar tudo</button>
+      </div>
+      <input type="file" id="fileBackup" accept=".json" style="display:none">
+    </div>
+  </aside>
+
+  <section>
+    <div class="card">
+      <div class="tabbar">
+        <button data-tab="resumo" class="active">Resumo</button>
+        <button data-tab="perdidos">Deixaram de te seguir</button>
+        <button data-tab="novos">Novos seguidores</button>
+        <button data-tab="naovolta">Não seguem de volta</button>
+        <button data-tab="historico">Histórico</button>
+      </div>
+
+      <div id="tab-resumo" class="pane active">
+        <div class="stats">
+          <div class="stat amber"><div class="n" id="sPerdidos">–</div><div class="l">deixaram de te seguir</div></div>
+          <div class="stat teal"><div class="n" id="sNovos">–</div><div class="l">novos seguidores</div></div>
+          <div class="stat"><div class="n" id="sNaoVolta">–</div><div class="l">não seguem de volta</div></div>
+          <div class="stat"><div class="n" id="sTotalFollowers">–</div><div class="l">seguidores atuais</div></div>
+        </div>
+        <p class="meta" id="resumoMeta">Envie um snapshot para começar.</p>
+      </div>
+
+      <div id="tab-perdidos" class="pane">
+        <div class="rowbtns"><button class="ghost" id="expPerdidos">Exportar lista (.txt)</button></div>
+        <ul class="userlist" id="listPerdidos"></ul>
+      </div>
+
+      <div id="tab-novos" class="pane">
+        <div class="rowbtns"><button class="ghost" id="expNovos">Exportar lista (.txt)</button></div>
+        <ul class="userlist" id="listNovos"></ul>
+      </div>
+
+      <div id="tab-naovolta" class="pane">
+        <div class="rowbtns"><button class="ghost" id="expNaoVolta">Exportar lista (.txt)</button></div>
+        <ul class="userlist" id="listNaoVolta"></ul>
+      </div>
+
+      <div id="tab-historico" class="pane">
+        <div id="historyList"></div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer>Dados armazenados apenas no localStorage deste navegador. Nada é enviado para nenhum servidor.</footer>
+
+<script>
+(function(){
+  const LS_F = 'radar_followers_history', LS_G = 'radar_following_history';
+  const $ = id => document.getElementById(id);
+
+  const getHist = k => { try{ return JSON.parse(localStorage.getItem(k))||[]; }catch(e){ return []; } };
+  const setHist = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+
+  function normalize(list){
+    const seen = new Set(); const out=[];
+    for(let u of list){
+      if(!u) continue;
+      u = String(u).trim().replace(/^@/,'');
+      if(u && !seen.has(u.toLowerCase())){ seen.add(u.toLowerCase()); out.push(u); }
+    }
+    return out;
+  }
+
+  function extractFromInstagramJSON(obj){
+    let arr = Array.isArray(obj) ? obj : null;
+    if(!arr){
+      for(const k in obj){ if(Array.isArray(obj[k])){ arr = obj[k]; break; } }
+    }
+    if(!arr) return [];
+    return arr.map(entry=>{
+      if(typeof entry === 'string') return entry;
+      if(entry.string_list_data && entry.string_list_data[0]) return entry.string_list_data[0].value;
+      if(entry.value) return entry.value;
+      return null;
+    }).filter(Boolean);
+  }
+
+  function readFile(file){
+    return new Promise((res,rej)=>{
+      const r = new FileReader();
+      r.onload = ()=>res(r.result);
+      r.onerror = ()=>rej(new Error('Falha ao ler arquivo'));
+      r.readAsText(file);
+    });
+  }
+
+  // Tabs (sub)
+  $('tabInsta').onclick = ()=>{ $('tabInsta').classList.add('active'); $('tabManual').classList.remove('active'); $('paneInsta').classList.add('active'); $('paneManual').classList.remove('active'); };
+  $('tabManual').onclick = ()=>{ $('tabManual').classList.add('active'); $('tabInsta').classList.remove('active'); $('paneManual').classList.add('active'); $('paneInsta').classList.remove('active'); };
+
+  // Main tabs
+  document.querySelectorAll('.tabbar button').forEach(btn=>{
+    btn.onclick = ()=>{
+      document.querySelectorAll('.tabbar button').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('main .pane').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      $('tab-'+btn.dataset.tab).classList.add('active');
+    };
+  });
+
+  function setMsg(text, isErr){
+    const m = $('importMsg'); m.textContent = text; m.className = 'msg' + (isErr?' err':'');
+  }
+
+  async function analyze(){
+    setMsg('');
+    let followers = null, following = null;
+    try{
+      if($('paneInsta').classList.contains('active')){
+        const ff = $('fileFollowers').files[0], fg = $('fileFollowing').files[0];
+        if(ff) followers = extractFromInstagramJSON(JSON.parse(await readFile(ff)));
+        if(fg) following = extractFromInstagramJSON(JSON.parse(await readFile(fg)));
+      } else {
+        const tf = $('taFollowers').value.trim(), tg = $('taFollowing').value.trim();
+        if(tf) followers = tf.split('\n');
+        if(tg) following = tg.split('\n');
+      }
+    }catch(e){ setMsg('Não consegui ler o arquivo. Confira o formato.', true); return; }
+
+    if(!followers && !following){ setMsg('Envie ao menos uma lista.', true); return; }
+
+    if(followers) pushSnapshot(LS_F, normalize(followers));
+    if(following) pushSnapshot(LS_G, normalize(following));
+
+    setMsg('Snapshot salvo e analisado.');
+    render();
+  }
+
+  function pushSnapshot(key, list){
+    const hist = getHist(key);
+    hist.push({ ts: Date.now(), list });
+    if(hist.length > 40) hist.shift();
+    setHist(key, hist);
+  }
+
+  function diff(prev, curr){
+    const prevSet = new Set(prev.map(u=>u.toLowerCase()));
+    const currSet = new Set(curr.map(u=>u.toLowerCase()));
+    const removed = prev.filter(u=>!currSet.has(u.toLowerCase()));
+    const added = curr.filter(u=>!prevSet.has(u.toLowerCase()));
+    return { removed, added };
+  }
+
+  function fmtDate(ts){
+    return new Date(ts).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }
+
+  function renderList(ulId, items){
+    const ul = $(ulId); ul.innerHTML = '';
+    if(!items.length){ ul.innerHTML = '<div class="empty">Nada por aqui.</div>'; return; }
+    items.forEach(u=>{
+      const li = document.createElement('li');
+      li.innerHTML = '<span>'+u+'</span>';
+      ul.appendChild(li);
+    });
+  }
+
+  function download(filename, text){
+    const blob = new Blob([text], {type:'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  let lastPerdidos=[], lastNovos=[], lastNaoVolta=[];
+
+  function render(){
+    const histF = getHist(LS_F), histG = getHist(LS_G);
+    const currF = histF.length ? histF[histF.length-1].list : [];
+    const prevF = histF.length>1 ? histF[histF.length-2].list : [];
+    const currG = histG.length ? histG[histG.length-1].list : [];
+
+    const dF = diff(prevF, currF);
+    lastPerdidos = dF.removed; lastNovos = dF.added;
+
+    const followersLower = new Set(currF.map(u=>u.toLowerCase()));
+    lastNaoVolta = currG.filter(u=>!followersLower.has(u.toLowerCase()));
+
+    $('sPerdidos').textContent = histF.length>1 ? lastPerdidos.length : '–';
+    $('sNovos').textContent = histF.length>1 ? lastNovos.length : '–';
+    $('sNaoVolta').textContent = currG.length ? lastNaoVolta.length : '–';
+    $('sTotalFollowers').textContent = currF.length || '–';
+
+    $('resumoMeta').textContent = histF.length
+      ? 'Último snapshot de seguidores: ' + fmtDate(histF[histF.length-1].ts) + (histF.length>1 ? ' · comparado com ' + fmtDate(histF[histF.length-2].ts) : ' · ainda sem snapshot anterior para comparar')
+      : 'Envie um snapshot para começar.';
+
+    renderList('listPerdidos', lastPerdidos);
+    renderList('listNovos', lastNovos);
+    renderList('listNaoVolta', lastNaoVolta);
+
+    renderHistory();
+  }
+
+  function renderHistory(){
+    const el = $('historyList');
+    const histF = getHist(LS_F), histG = getHist(LS_G);
+    if(!histF.length && !histG.length){ el.innerHTML = '<div class="empty">Nenhum snapshot salvo ainda.</div>'; return; }
+    let html = '';
+    if(histF.length){
+      html += '<h3 style="font-size:.85rem;color:var(--muted);margin:4px 0 8px;">Seguidores</h3>';
+      histF.slice().reverse().forEach(h=>{ html += '<div class="history-item"><span class="d">'+fmtDate(h.ts)+'</span><span class="c">'+h.list.length+' contas</span></div>'; });
+    }
+    if(histG.length){
+      html += '<h3 style="font-size:.85rem;color:var(--muted);margin:16px 0 8px;">Seguindo</h3>';
+      histG.slice().reverse().forEach(h=>{ html += '<div class="history-item"><span class="d">'+fmtDate(h.ts)+'</span><span class="c">'+h.list.length+' contas</span></div>'; });
+    }
+    el.innerHTML = html;
+  }
+
+  $('btnAnalyze').onclick = analyze;
+  $('expPerdidos').onclick = ()=>download('deixaram-de-seguir.txt', lastPerdidos.join('\n'));
+  $('expNovos').onclick = ()=>download('novos-seguidores.txt', lastNovos.join('\n'));
+  $('expNaoVolta').onclick = ()=>download('nao-seguem-de-volta.txt', lastNaoVolta.join('\n'));
+
+  $('btnExportBackup').onclick = ()=>{
+    const data = { followers: getHist(LS_F), following: getHist(LS_G), exportedAt: Date.now() };
+    download('radar-seguidores-backup.json', JSON.stringify(data, null, 2));
+  };
+  $('btnImportBackup').onclick = ()=> $('fileBackup').click();
+  $('fileBackup').onchange = async (e)=>{
+    const f = e.target.files[0]; if(!f) return;
+    try{
+      const data = JSON.parse(await readFile(f));
+      if(data.followers) setHist(LS_F, data.followers);
+      if(data.following) setHist(LS_G, data.following);
+      render();
+      setMsg('Backup importado com sucesso.');
+    }catch(err){ setMsg('Backup inválido.', true); }
+  };
+  $('btnClear').onclick = ()=>{
+    if(confirm('Apagar todo o histórico salvo neste navegador? Essa ação não pode ser desfeita.')){
+      localStorage.removeItem(LS_F); localStorage.removeItem(LS_G);
+      render();
+    }
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>
